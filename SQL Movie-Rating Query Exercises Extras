@@ -1,0 +1,102 @@
+Q1. Find the names of all reviewers who rated Gone with the Wind. 
+select distinct name from
+movie join rating join reviewer
+where movie.mID = rating.mID and rating.rID = reviewer.rID
+and title = 'Gone with the Wind'
+
+Q2. For any rating where the reviewer is the same as the director of the movie, return the reviewer name, 
+movie title, and number of stars. 
+
+select movie.director, movie.title, stars
+from movie join rating join reviewer
+where movie.mID = rating.mID and rating.rID = reviewer.rID
+and movie.director = reviewer.name
+
+Q3. Return all reviewer names and movie names together in a single list, alphabetized. 
+(Sorting by the first name of the reviewer and first word in the title is fine; no need
+for special processing on last names or removing "The".) 
+
+select Reviewer.name from Reviewer
+union
+select Movie.title from Movie
+
+Q4.Find the titles of all movies not reviewed by Chris Jackson. 
+select title from Movie
+where mID not in
+(select mID from 
+reviewer join rating where reviewer.rID = rating.rID
+and reviewer.name = 'Chris Jackson')
+
+Q5. For all pairs of reviewers such that both reviewers gave a rating to the same movie, return the names of both reviewers. 
+Eliminate duplicates, don't pair reviewers with themselves, 
+and include each pair only once. For each pair, return the names in the pair in alphabetical order. 
+
+select distinct RE1.name, RE2.name 
+from reviewer RE1,
+(select r1.rID as rID1, r2.rID as rID2 from
+rating r1 join rating r2 
+where r1.mID = r2.mID
+ and r1.rID !=r2.rID) a,
+ reviewer RE2
+ where RE1.rID = a.rID1 and RE2.rID = a.rID2
+ and RE1.name <RE2.name
+ 
+ Q6. For each rating that is the lowest (fewest stars) currently in the database, return the reviewer name, movie title, and number of stars. 
+ select reviewer.name, movie.title, rating.stars
+from movie join rating join reviewer
+where movie.mID = rating.mID and rating.rID = reviewer.rID
+and rating.stars =
+(select min(stars) from rating)
+
+Q7.List movie titles and average ratings, from highest-rated to lowest-rated. If two or more movies have the same average rating, list them in alphabetical order.
+select movie.title, avg(rating.stars)
+from movie join rating
+where movie.mID = rating.mID
+group by movie.title
+order by avg(rating.stars) desc, movie.title
+
+Q8.Find the names of all reviewers who have contributed three or more ratings. (As an extra challenge, try writing the query without HAVING or without COUNT.) 
+select distinct reviewer.name
+from rating R1 join reviewer join rating R2
+where R1.rID = reviewer.rID and R2.rID = reviewer.rID
+and 3<= (select count(*) from Rating R2 where R2.rID = R1.rID)
+
+Q9.Some directors directed more than one movie. For all such directors, return the titles of all movies directed by them, along with the director name. Sort by director name, then movie title. (As an extra challenge, try writing the query both with and without COUNT.) 
+select a.title, b.director from Movie a
+join
+(select movie.director from Movie
+group by movie.director
+having count(movie.director) >1) b
+on a.director = b.director
+
+Q10. Find the movie(s) with the highest average rating. 
+select movie.title, a.avg
+from movie join 
+(select mID, avg from
+(select mID, avg(stars) as avg from rating
+group by mID)
+where avg =
+    (select max(avg) from 
+    (select  avg(stars) as avg from rating
+group by mID)))a
+where movie.mID = a.mID
+
+Q11.Find the movie(s) with the lowest average rating. 
+select movie.title, a.avg
+from movie join 
+(select mID, avg from
+(select mID, avg(stars) as avg from rating
+group by mID)
+where avg =
+    (select min(avg) from 
+    (select  avg(stars) as avg from rating
+group by mID)))a
+where movie.mID = a.mID
+
+Q12. For each director, return the director's name together with the title(s) of the movie(s) they directed that received the highest rating among all of their movies, and the value of that rating. Ignore movies whose director is NULL. 
+select movie.director, movie.title, max(rating.stars)
+from movie join rating
+where movie.mID = rating.mID
+and movie.director is not null
+group by movie.director
+
